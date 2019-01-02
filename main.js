@@ -1,23 +1,15 @@
 var ALL_PAGES_ID = "pages";
+var CURRENT_BILL = null;
+var existingBill = false;
 var PAGE_IDS = {
     billPageID: 'bill-page',
-    allBillsPageID: 'all-bills-page'
+    allBillsPageID: 'all-bills-page',
+	loadingPageID: 'loading-overlay'
 };
-var DATA = {};
-DATA.loading = false;
+var DATA = {}
 
 function isEmpty(obj) {
     return Object.keys(obj).length === 0 && obj.constructor === Object;
-}
-
-function updateBindingData() {
-    // Updates all global variables with the DATA object
-    DATA.currentBill = {};
-    DATA.allBills = Object.values(ALL_BILLS_CACHE);
-    DATA.userDetails = USER_DETAILS;
-	rivetBind({
-		data: DATA,
-	});
 }
 
 function element(id) {
@@ -35,10 +27,6 @@ function showElement(id) {
     element(id).style.display = "";
 }
 
-function rivetBind(obj) {
-    rivets.bind(document.getElementsByTagName("body")[0], obj);
-}
-
 function hideAllPages() {
     // hides all views for the user
     Object.values(PAGE_IDS).forEach(pageId => {
@@ -53,85 +41,120 @@ function showAllBillsPage() {
         getBillsAndRefresh();
     }
     showElement(PAGE_IDS.allBillsPageID);
+
+	// Set values
+	headingRowHTML = element("heading-row").outerHTML;
+	element("all-bills-table").innerHTML = headingRowHTML;
+	Object.values(ALL_BILLS_CACHE).forEach(obj => {
+		if (obj) {
+			element("all-bills-table").innerHTML += "<tr id='" + obj.key + "'>" + 
+				"<td onclick='showThisBillPageOnClick(this)'>" + obj.name + "</td>" + 
+				"<td>" + obj.amount + "</td>" + 
+				"<td>" + obj.dateVisible + "</td>" + 
+				"</tr>";
+		}
+	});
 }
 
 function showBillPage(bill) {
     // Switches the user view to a specific bill
     hideAllPages();
-    DATA.uploadButtonText = "Update Bill";
-    DATA.existingBill = true;
-    DATA.currentBill = bill;
+	DATA.existingBill = true;
+	DATA.currentBill = bill;
+
+	// Set values
+	element("key-input-div").style.dysplay = "";
+	element("image-div").style.dysplay = "";
+	element("delete-button").style.dysplay = "";
+
+	element("input-el-key").value = bill.key;
+	element("input-el-name").value = bill.name;
+	element("input-el-amount").value = bill.amount;
+	element("dateVisible").value = bill.dateVisible;
+	element("image").src = bill.imageUrl;
+
     showElement(PAGE_IDS.billPageID);
 }
 
 function showUploadBillPage() {
     // Switches the user view to the upload form
     hideAllPages();
-    DATA.uploadButtonText = "Add Bill";
-    DATA.existingBill = false;
+	DATA.existingBill = false;
     showElement(PAGE_IDS.billPageID);
+
+	// Set values
+	element("key-input-div").style.dysplay = "";
+	element("image-div").style.dysplay = "";
+	element("delete-button").style.dysplay = "";
+	
+	element("input-el-key").value = '';
+	element("input-el-name").value = '';
+	element("input-el-amount").value = '';
+	element("dateVisible").value = '';
+	element("image").src = '';
 }
 
-function showThisBillPageOnClick(event, item) {
-    showBillPage(item.bill);
+function showThisBillPageOnClick(obj) {
+	if (obj && obj.parentElement) {
+		var key = obj.parentElement.id;
+		if (key) {
+			showBillPage(getBillFromCache(key));
+		}
+	}
 }
 
-function addBillOnClick(event, item) {
+function addBillOnClick() {
     // Called when the 'Add Bill' button is clicked from the frontend
-    DATA.loading = true;
+	DATA.loading = true;
     var key = undefined;
     if (DATA.existingBill) {
         key = element("input-el-key").value;
     }
     var name = element("input-el-name").value;
     var amount = element("input-el-amount").value;
+	if (CURRENT_BILL)
+    var date = CURRENT_BILL.date;
+	else var date = null;
     var imageFile = element("input-el-image-file").files[0];
-	if (!name || !amount || (!key && !imageFile)) {
-		alert("Please fill up all fields");
+    if (!name || !amount || (!key && !imageFile)) {
+        alert("Please fill up all fields");
 		DATA.loading = false;
-		return;
-	}
-    uploadImageAndAddBill(key, name, amount, imageFile, key => {
+        return;
+    }
+    uploadImageAndAddBill(key, name, amount, date, imageFile, key => {
         var bill = getBillFromCache(key);
-        updateBindingData();
-        DATA.loading = false;
         showBillPage(bill);
+		DATA.loading = false;
     });
 }
 
-function deleteBillOnClick(event, item) {
-    DATA.loading = true;
+function deleteBillOnClick() {
+	DATA.loading = true;
     var key = element("input-el-key").value;
-	callback = function() {
-        updateBindingData();
-        DATA.loading = false;
+    callback = function() {
         showAllBillsPage();
+		DATA.loading = false;
     }
     deleteImageAndBill(key, callback, callback);
 }
 
 function getBillsAndRefresh() {
-    DATA.loading = true;
+	DATA.loading = true;
     getBills(function(bills) {
-        updateBindingData();
-        DATA.loading = false;
+		DATA.loading = false;
     });
 }
 
+function checkLoading() {
+	if (DATA.loading) {
+		element("loading-overlay").style.display = "";
+	} else {
+		element("loading-overlay").style.display = "none";
+	}
+}
+
 function init() {
-    rivets.binders.src = function(el, value) {
-        el.src = value;
-    };
     signInIfRequired(function() {
-        rivetBind({
-            data: DATA,
-            showThisBillPage: showThisBillPageOnClick,
-            addBill: addBillOnClick,
-            deleteBill: deleteBillOnClick,
-            showAllBillsPage: showAllBillsPage,
-            showUploadBillPage: showUploadBillPage
-        });
-        updateBindingData();
     });
 
     navigator.serviceWorker && navigator.serviceWorker.register('./sw.js').then(function(registration) {
@@ -140,3 +163,5 @@ function init() {
 }
 
 init();
+
+window.setInterval(checkLoading, 500);

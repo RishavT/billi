@@ -3,8 +3,8 @@
 <head>
 <title>Page Title</title>
 <script src="https://www.gstatic.com/firebasejs/5.7.0/firebase.js"></script>
-<script type="text/javascript" src="rivets.bundled.min.js"></script>
-
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.2/knockout-min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/moment@2.23.0/min/moment.min.js"></script>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
 
@@ -15,47 +15,46 @@
 
 <div id="container">
 	<ul class="nav nav-tabs" id="nav">
-		<li class="nav-item"><a class="nav-link" rv-on-click="showAllBillsPage">All Bills</a></li>
-		<li class="nav-item"><a class="nav-link" rv-on-click="showUploadBillPage">Add New Bill</a></li>
+		<li class="nav-item"><a class="nav-link" onclick="showAllBillsPage()">All Bills</a></li>
+		<li class="nav-item"><a class="nav-link" onclick="showUploadBillPage()">Add New Bill</a></li>
 		<li class="nav-item"><a class="nav-link" id="refresh-cache" onclick="getBillsAndRefresh();">Refresh</a></li>
 	</ul>
 	<div id="pages">
 		<div id="bill-page" style="display: none;">
 			<form>
-				<div rv-show="data.existingBill" class="form-group">
+				<div id="key-input-div" class="form-group">
 					<label class="form-control">Key</label>
-					<input rv-value="data.currentBill.key" id="input-el-key" disabled="true"/>
+					<input id="input-el-key" disabled="true"/>
 				</div>
 				<div class="form-group">
 					<label class="form-control">Name</label>
-					<input requred type="text" rv-value="data.currentBill.name" id="input-el-name" name="name"/>
+					<input requred type="text" id="input-el-name" name="name"/>
 				</div>
 				<div class="form-group">
 					<label class="form-control">Amount</label>
-					<input requred type="number" rv-value="data.currentBill.amount" id="input-el-amount" name="amount"/>
+					<input requred type="number" id="input-el-amount" name="amount"/>
 				</div>
 				<div class="form-group">
-					<label rv-show="data.existingBill"><img class=".img-fluid" rv-src="data.currentBill.imageUrl"></img></label>
+					<label class="form-control">Date</label>
+					<input disabled requred type="text" id='dateVisible' name='dateVisible'/>
+				</div>
+				<div class="form-group">
+					<label id="image-div"><img class=".img-fluid" id="image"></img></label>
 					<input type="file" id="input-el-image-file" accept="image/*" name="image-file" accept="image/*"/>
 				</div>
 				<div id="update-buttons" class="row justify-content-center">	
-					<button onsubmit="this.preventDefault(); return false;" type="button" class="btn btn-light" id="upload-button" rv-on-click="addBill">{ data.uploadButtonText }</button>
-					<button type="button" class="btn btn-light" id="delete-button justify-content-end" rv-show="data.existingBill" rv-on-click="deleteBill">Delete Bill</button>
+					<button type="button" class="btn btn-light" id="upload-button" onclick="addBillOnClick()">Upload</button>
+					<button type="button" class="btn btn-light" id="delete-button" onclick="deleteBillOnClick()">Delete Bill</button>
 				</div>
 			</div>
 		</form>
 
 		<div id="all-bills-page" style="display: none;">
 			<table class="table fullwidth" id="all-bills-table">
-				<tr>
+				<tr id="heading-row">
 					<th>Name</th>
 					<th>Amount</th>
-					<th>Image url</th>
-				</tr>
-				<tr rv-each-bill="data.allBills | values">
-					<td rv-on-click="showThisBillPage">{ bill.name }</td>
-					<td>{ bill.amount }</td>
-					<td><a target="_blank" href="{ bill.imageUrl }">Open Image</a></td>
+					<th>Date</th>
 				</tr>
 			</table>
 		</div>
@@ -64,7 +63,7 @@
 	<script type="text/javascript" src="main.js"></script>
 
 </div>
-<div rv-show="data.loading" id="loading-overlay">
+<div rv-show="loading" id="loading-overlay">
 	<div class="spinner-border" role-"status" id="loading-text"></div>
 </div>
 </body>

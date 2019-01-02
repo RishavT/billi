@@ -11,8 +11,8 @@ function saveToLocalStorage() {
 function loadFromLocalStorage() {
     USER_DETAILS = JSON.parse(localStorage.getItem("USER_DETAILS"));
     ALL_BILLS_CACHE = JSON.parse(localStorage.getItem("ALL_BILLS_CACHE"));
-	if (!USER_DETAILS) USER_DETAILS = {};
-	if (!ALL_BILLS_CACHE) ALL_BILLS_CACHE = {};
+    if (!USER_DETAILS) USER_DETAILS = {};
+    if (!ALL_BILLS_CACHE) ALL_BILLS_CACHE = {};
 }
 
 function getBillFromCache(key) {
@@ -24,21 +24,25 @@ function addOrUpdateBillInBillCache(key, value) {
     // Adds or updates a bill in the global Bills object
 
     value.key = key;
+    value.date = moment(JSON.parse(value.date));
+	if (value.date) {
+	    value.dateVisible = value.date.format("YYYY/MM/DD");
+	} else value.dateVisible = "";
     ALL_BILLS_CACHE[key] = value;
     saveToLocalStorage();
 }
 
 function deleteBillFromCache(key) {
-	// deletes a bill from the cache
+    // deletes a bill from the cache
 
-	ALL_BILLS_CACHE[key] = undefined;
-	saveToLocalStorage();
+    ALL_BILLS_CACHE[key] = undefined;
+    saveToLocalStorage();
 }
 
 function resetBillCache() {
     // Resets the ALL_BILLS_CACHE object
     Object.keys(ALL_BILLS_CACHE).forEach(key => {
-        ALL_BILLS_CACHE[key] = undefined;
+        delete ALL_BILLS_CACHE[key];
     });
     saveToLocalStorage();
 }
@@ -71,7 +75,7 @@ function signInIfRequired(callback) {
         if (result.user) {
             USER_DETAILS = {
                 email: result.user.email,
-				result: result
+                result: result
             };
             saveToLocalStorage();
         } else signIn();
@@ -94,7 +98,7 @@ function getBills(callback = null, error_callback = null) {
     }
     firebase.database().ref('/bills').once('value').then(function(snapshot) {
         resetBillCache();
-		if (!snapshot) { callback(); return; }
+        if (!snapshot) { callback(); return; }
         snapshot.forEach(obj => {
             addOrUpdateBillInBillCache(obj.key, obj.val());
         })
@@ -117,14 +121,16 @@ function uploadImage(filename, file, callback = null, error_callback = null) {
 }
 
 function deleteImage(filename, callback=null, error_callback=null) {
-	// Deletes an image
+    // Deletes an image
     if (!callback) {
         callback = console.log;
     }
     if (!error_callback) {
         error_callback = console.log;
     }
-    firebase.storage().ref(filename).delete().then(callback).catch(error_callback)
+	if (filename) {
+		firebase.storage().ref(filename).delete().then(callback).catch(error_callback)
+	}
 }
 
 function addBill(name, amount, imageUrl, callback = null, error_callback = null) {
@@ -136,11 +142,13 @@ function addBill(name, amount, imageUrl, callback = null, error_callback = null)
     if (!error_callback) {
         error_callback = console.log;
     }
+    var date = JSON.stringify(moment());
     var newKey = firebase.database().ref().child('bills').push().key;
     var updates = {};
     var postData = {
         name: name,
         amount: amount,
+        date: date,
         imageUrl: imageUrl
     };
 
@@ -151,13 +159,14 @@ function addBill(name, amount, imageUrl, callback = null, error_callback = null)
             error_callback(errors);
         } else {
             addOrUpdateBillInBillCache(newKey, postData);
-            callback(newKey);
+			postData.key = newKey;
+            callback(postData);
         }
     });
 
 }
 
-function updateBill(key, name, amount, imageUrl, callback = null, error_callback = null) {
+function updateBill(key, name, amount, date, imageUrl, callback = null, error_callback = null) {
     // Updates a bill to the database and calls either callback or error_callback accordingly
     // Will pass 'key' to the successful callback
     if (!callback) {
@@ -170,6 +179,7 @@ function updateBill(key, name, amount, imageUrl, callback = null, error_callback
     var postData = {
         name: name,
         amount: amount,
+        date: JSON.stringify(moment(date)),
         imageUrl: imageUrl
     };
 
@@ -195,19 +205,19 @@ function deleteBill(key, callback = null, error_callback = null) {
         error_callback = console.log;
     }
     firebase.database().ref("bills/" + key).remove(errors => {
-		if (errors) {
-			error_callback(errors);
-		}
-		else { 
-			deleteBillFromCache(key);
-			callback();
-		}
-	});
+        if (errors) {
+            error_callback(errors);
+        }
+        else {
+            deleteBillFromCache(key);
+            callback();
+        }
+    });
 
 }
 
 function deleteImageAndBill(key, callback=null, error_callback=null) {
-	// First deletes the image then deletes the bill
+    // First deletes the image then deletes the bill
     if (!callback) {
         callback = console.log;
     }
@@ -215,15 +225,15 @@ function deleteImageAndBill(key, callback=null, error_callback=null) {
         error_callback = console.log;
     }
 
-	deleteBill(key, function() {
-		deleteImage(key, callback, error_callback);
-	}, error_callback);
+    deleteBill(key, function() {
+        deleteImage(key, callback, error_callback);
+    }, error_callback);
 }
 
-function uploadImageAndAddBill(key, name, amount, imageFile, callback = null, error_callback = null) {
-    // Takes a bill name, amount, imagefile. Uploads the image and then
+function uploadImageAndAddBill(key, name, amount, date, imageFile, callback = null, error_callback = null) {
+    // Takes a bill name, amount, date, imagefile. Uploads the image and then
     // adds the bill to the database.
-	// If the key is given, it will update instead.
+    // If the key is given, it will update instead.
     if (!callback) {
         callback = console.log;
     }
@@ -232,13 +242,20 @@ function uploadImageAndAddBill(key, name, amount, imageFile, callback = null, er
     }
 
     if (key) {
-        uploadImage(key, imageFile, url => {
-            updateBill(key, name, amount, url, callback, error_callback);
-        }, error_callback);
+		if (imageFile) {
+			uploadImage(key, imageFile, url => {
+				updateBill(key, name, amount, date, url, callback, error_callback);
+			}, error_callback);
+		} else {
+			var oldObj = getBillFromCache(key);
+			if (oldObj) {
+				updateBill(key, name, amount, date, oldObj.imageUrl, callback, error_callback);
+			}
+		}
     } else {
-        addBill(name, amount, '', newKey => {
-            uploadImage(newKey, imageFile, url => {
-                updateBill(newKey, name, amount, url, callback, error_callback);
+        addBill(name, amount, null, obj => {
+            uploadImage(obj.key, imageFile, url => {
+                updateBill(obj.key, name, amount, obj.date, url, callback, error_callback);
             }, error_callback);
 
         }, error_callback);
