@@ -1,9 +1,23 @@
 {
-	"short_name": "Billi",
-	"name" : "Billi - your personal Bill assistant",
-	"icons": [
-	],
-	"start_url": "/index.html",
-	"display": "standalone",
-	"orientation": "portrait"
+    "short_name": "Billi",
+    "name": "Billi - your personal Bill assistant",
+    "icons": [{
+            "src": "img/icon-152.png",
+            "sizes": "152x152",
+            "type": "image/png"
+        },
+        {
+            "src": "img/icon-180.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        },
+        {
+            "src": "img/icon-167.png",
+            "sizes": "167x167",
+            "type": "image/png"
+        }
+    ],
+    "start_url": "/index.html",
+    "display": "standalone",
+    "orientation": "portrait"
 }
