@@ -1,0 +1,71 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<title>Page Title</title>
+<script src="https://www.gstatic.com/firebasejs/5.7.0/firebase.js"></script>
+<script type="text/javascript" src="rivets.bundled.min.js"></script>
+
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+<meta name="viewport" content="width=device-width, user-scalable=no"/>
+<link rel="manifest" href="manifest.json"/>
+</head>
+<body>
+
+<div id="container">
+	<ul class="nav nav-tabs" id="nav">
+		<li class="nav-item"><a class="nav-link" rv-on-click="showAllBillsPage">All Bills</a></li>
+		<li class="nav-item"><a class="nav-link" rv-on-click="showUploadBillPage">Add New Bill</a></li>
+		<li class="nav-item"><a class="nav-link" id="refresh-cache" onclick="getBillsAndRefresh();">Refresh</a></li>
+	</ul>
+	<div id="pages">
+		<div id="bill-page" style="display: none;">
+			<form>
+				<div rv-show="data.existingBill" class="form-group">
+					<label class="form-control">Key</label>
+					<input rv-value="data.currentBill.key" id="input-el-key" disabled="true"/>
+				</div>
+				<div class="form-group">
+					<label class="form-control">Name</label>
+					<input requred type="text" rv-value="data.currentBill.name" id="input-el-name" name="name"/>
+				</div>
+				<div class="form-group">
+					<label class="form-control">Amount</label>
+					<input requred type="number" rv-value="data.currentBill.amount" id="input-el-amount" name="amount"/>
+				</div>
+				<div class="form-group">
+					<label rv-show="data.existingBill"><img class=".img-fluid" rv-src="data.currentBill.imageUrl"></img></label>
+					<input type="file" id="input-el-image-file" accept="image/*" name="image-file" accept="image/*"/>
+				</div>
+				<div id="update-buttons" class="row justify-content-center">	
+					<button onsubmit="this.preventDefault(); return false;" type="button" class="btn btn-light" id="upload-button" rv-on-click="addBill">{ data.uploadButtonText }</button>
+					<button type="button" class="btn btn-light" id="delete-button justify-content-end" rv-show="data.existingBill" rv-on-click="deleteBill">Delete Bill</button>
+				</div>
+			</div>
+		</form>
+
+		<div id="all-bills-page" style="display: none;">
+			<table class="table fullwidth" id="all-bills-table">
+				<tr>
+					<th>Name</th>
+					<th>Amount</th>
+					<th>Image url</th>
+				</tr>
+				<tr rv-each-bill="data.allBills | values">
+					<td rv-on-click="showThisBillPage">{ bill.name }</td>
+					<td>{ bill.amount }</td>
+					<td><a target="_blank" href="{ bill.imageUrl }">Open Image</a></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+	<script type="text/javascript" src="db.js"></script>
+	<script type="text/javascript" src="main.js"></script>
+
+</div>
+<div rv-show="data.loading" id="loading-overlay">
+	<div class="spinner-border" role-"status" id="loading-text"></div>
+</div>
+</body>
+</html> 

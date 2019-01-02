@@ -1,0 +1,37 @@
+.hidden {
+    display: none;
+}
+
+#loading-text {
+  position: fixed;
+  z-index: 999;
+  height: 3em;
+  width: 3em;
+  overflow: show;
+  margin: auto;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+
+#container {
+	margin: auto;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+	padding: 1%;
+}
+
+.fixed-table { table-align: fixed; }
+
+.fullwidth { width: 100% };
+
+#update-buttons {
+	width: 80%
+}
+
+#update-buttons button {
+	margin: 10px;
+}
